@@ -1,4 +1,13 @@
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -15,16 +24,26 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Es7Test {
+
+    private static String hostname = "127.0.0.1";
+    private static Integer port = 9200;
+    private static String scheme = "https";
+    public static String username = "elastic";
+    public static String password = "EaPvk=T+6N5j3Wy+QZVR";
 
     public static void main(String[] args) {
 //        index();
@@ -166,7 +185,7 @@ public class Es7Test {
 
     // 批量查询
     public static void multiGet() {
-        RestHighLevelClient client = getClient();
+        RestHighLevelClient client = getSecureClient();
 
         MultiGetRequest request = new MultiGetRequest();
         request.add(new MultiGetRequest.Item("user", "2"));
@@ -206,17 +225,49 @@ public class Es7Test {
     }
 
     /**
-     * 获取客户端
+     * 获取客户端 for http
      *
      * @return
      */
     private static RestHighLevelClient getClient() {
         RestHighLevelClient client = new RestHighLevelClient(
             RestClient.builder(
-                new HttpHost("rd_mac_mini", 9200, "http")
+                new HttpHost(hostname, port, scheme)
             )
         );
         return client;
+    }
+
+    private static RestHighLevelClient getSecureClient() {
+        System.out.println("Elasticsearch init start ......");
+        RestHighLevelClient restClient = null;
+        try {
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials(username, password));
+
+            SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustStrategy() {
+                // 信任所有
+                public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    return true;
+                }
+            }).build();
+            SSLIOSessionStrategy sessionStrategy = new SSLIOSessionStrategy(sslContext, NoopHostnameVerifier.INSTANCE);
+            restClient = new RestHighLevelClient(
+                RestClient.builder(
+                    new HttpHost(hostname, port, scheme))
+                    .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+                        public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                            httpClientBuilder.disableAuthCaching();
+                            httpClientBuilder.setSSLStrategy(sessionStrategy);
+                            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                            return httpClientBuilder;
+                        }
+                    }));
+        } catch (Exception e) {
+            System.err.println(e);
+        }
+        return restClient;
     }
 
     /**
