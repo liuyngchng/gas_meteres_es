@@ -60,7 +60,8 @@ public class Es7Test {
 //        bulk();
 //        get();
 //        multiGet();
-        basicSearch();
+//        basicSearch();
+        multiMatchSearch();
     }
 
     /**
@@ -313,6 +314,46 @@ public class Es7Test {
 
     }
 
+
+    /**
+     * 对某个字段进行模糊搜索
+     * @throws IOException
+     */
+    public static void multiMatchSearch() {
+        try {
+            // 基础设置
+            SearchRequest searchRequest = new SearchRequest(indexName);
+            // 搜索源构建对象
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+            //一定要转成小写 toLowerCase() 否则搜索不到，加上以后大小写都可搜索到
+            // 注意 searchSourceBuilder 默认返回10 条数据，如果需要返回实级条数需要设置
+            BoolQueryBuilder queryBuilder =
+                QueryBuilders.boolQuery().should(QueryBuilders.wildcardQuery("user",
+                    ("*richard*").toLowerCase()));
+
+            // 可以使用分页查找 比如设置 searchSourceBuilder.from(1);就是从第二页进行查找，类似于MySQL中的limit
+            searchSourceBuilder.from(0);  //意思是从第一页开始查找
+            searchSourceBuilder.size(10);//每页大小
+            searchSourceBuilder.query(queryBuilder);
+
+            searchRequest.source(searchSourceBuilder);
+            // 发起请求，获取结果
+            SearchResponse searchResponse;
+            searchResponse = getSecureClient().search(searchRequest, RequestOptions.DEFAULT);
+            SearchHits hits = searchResponse.getHits();
+            // 得到匹配度高的文档
+            SearchHit[] searchHits = hits.getHits();
+            // 打印结果集
+            System.out.println(searchHits.length);
+            for (SearchHit searchHit : searchHits) {
+                System.out.println(searchHit.toString());
+                System.out.println("=============1");
+            }
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+    }
 
 
     /**
