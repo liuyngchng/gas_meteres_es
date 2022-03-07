@@ -6,3 +6,10 @@ sudo curl --cacert /etc/elasticsearch/certs/http_ca.crt  'https://127.0.0.1:9200
 
 # 3. run Elasticsearch as a daemon
 `./bin/elasticsearch -d -p pid`
+
+# 4. password
+password for ubuntu20.04 in T14
+username: elastic
+passowrd: q+jy_9qzovxwajQRoVRe
+
+

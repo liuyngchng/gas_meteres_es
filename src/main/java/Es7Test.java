@@ -52,7 +52,10 @@ public class Es7Test {
     private static Integer port = 9200;
     private static String scheme = "https";
     private static String userName = "elastic";
-    private static String password = "EaPvk=T+6N5j3Wy+QZVR";
+//    password for mac-mini
+//    private static String password = "EaPvk=T+6N5j3Wy+QZVR";
+//    password for ubuntu20.04 in T14
+    private static String password = "q+jy_9qzovxwajQRoVRe";
     private static String indexName = "user";
 
     public static void main(String[] args) {
@@ -69,13 +72,13 @@ public class Es7Test {
      * http://localhost:9200/user/_doc/1
      */
     public static void index() {
-        RestHighLevelClient client = getClient();
+        RestHighLevelClient client = getSecureClient();
 
         Map<String, Object> jsonMap = new HashMap<>();
-        jsonMap.put("user", "richard1");
+        jsonMap.put("user", "richard");
         jsonMap.put("postDate", new Date());
-        jsonMap.put("message", "trying out Elasticsearch again");
-        IndexRequest request = new IndexRequest(indexName).id("2").source(jsonMap);
+        jsonMap.put("message", "trying out Elasticsearch");
+        IndexRequest request = new IndexRequest(indexName).id("1").source(jsonMap);
 
         IndexResponse response = null;
         try {
